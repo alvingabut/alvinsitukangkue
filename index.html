@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Toko Kue Manis (First Person)</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;background:#bfe6ff;font-family:system-ui,"Segoe UI",sans-serif;user-select:none;-webkit-user-select:none}
+#c{position:fixed;inset:0;width:100%;height:100%;touch-action:none;display:block}
+.hud{position:fixed;left:8px;right:8px;top:max(8px,env(safe-area-inset-top));display:flex;flex-wrap:wrap;gap:4px 14px;align-items:center;background:#fffd;border-radius:16px;padding:8px 14px;font-weight:800;color:#4a2a3a;pointer-events:none}
+.timer{flex:1 1 100px;height:12px;background:#f6d5e0;border-radius:9px;overflow:hidden}
+.timer i{display:block;height:100%;width:0;background:#ff7ea8}
+.cross{position:fixed;left:50%;top:50%;width:14px;height:14px;margin:-7px;border:2px solid #fff;border-radius:50%;box-shadow:0 0 0 1px #0006;pointer-events:none}
+#prompt{position:fixed;left:50%;top:calc(50% + 28px);transform:translateX(-50%);background:#000a;color:#fff;font-weight:800;padding:6px 12px;border-radius:12px;pointer-events:none;text-align:center;max-width:90vw;display:none}
+.side{position:fixed;left:8px;bottom:max(8px,env(safe-area-inset-bottom));background:#fffd;color:#4a2a3a;border-radius:14px;padding:8px 12px;font-weight:800;pointer-events:none;line-height:1.6}
+.help{position:fixed;right:8px;bottom:max(8px,env(safe-area-inset-bottom));background:#0007;color:#fff;border-radius:12px;padding:6px 10px;font-size:.78rem;max-width:42vw;pointer-events:none}
+#toast{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 70px);transform:translate(-50%,-140px);background:#fff;color:#4a2a3a;border:2px solid #ff7ea8;border-radius:14px;padding:8px 14px;font-weight:800;z-index:20;transition:transform .3s;max-width:92vw;text-align:center;pointer-events:none}
+#toast.on{transform:translate(-50%,0)}
+.ov{position:fixed;inset:0;background:#2a1030d0;display:none;align-items:center;justify-content:center;z-index:30;padding:20px}
+.ov.on{display:flex}
+.box{background:#fff;color:#4a2a3a;border-radius:22px;padding:22px;max-width:440px;text-align:center;line-height:1.5}
+.box h2{margin:0 0 8px}.box p{margin:6px 0}
+.b{border:0;border-radius:14px;padding:12px 22px;background:#ff7ea8;color:#fff;font:800 1rem system-ui,sans-serif;box-shadow:0 4px 0 #c94d78;cursor:pointer;margin-top:8px}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div class="hud"><span id="hDay"></span><span id="hMoney"></span><span id="hRep"></span><div class="timer"><i id="tBar"></i></div><span id="hPh"></span></div>
+<div class="cross"></div><div id="prompt"></div>
+<div class="side"><div id="stockT"></div><div id="ovenT"></div></div>
+<div class="help">WASD jalan · Mouse lihat · Klik / E interaksi<br>HP: geser kiri jalan, kanan lihat, ketuk interaksi</div>
+<div id="toast"></div>
+<div class="ov on" id="ov"><div class="box"><h2>🧁 Toko Kue Manis</h2>
+<p>Kamu pemilik toko, lihat semuanya dari sudut pandang sendiri!</p>
+<p><b>Dapur:</b> arahkan ke baki kue di meja dapur lalu klik untuk menyuruh koki memanggang. <b>Kasir:</b> klik pelanggan untuk melayani. <b>Pengemis:</b> jalan ke luar toko dan beri dia kue tiap hari.</p>
+<p><b>Malam:</b> pencuri masuk. Klik 3x untuk menangkap sebelum sampai ke etalase! Klik koki untuk upgrade kecepatan.</p>
+<button class="b" data-a="start">Mulai Berjualan</button></div></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+const $=s=>document.querySelector(s),R=(a,b)=>a+Math.random()*(b-a),cl=(v,a,b)=>Math.max(a,Math.min(b,v));
+const C=[{k:'roti',e:'🍞',n:'Roti',c:4,p:10,t:3},{k:'cup',e:'🧁',n:'Cupcake',c:6,p:16,t:4},{k:'donat',e:'🍩',n:'Donat',c:8,p:21,t:5},{k:'tart',e:'🎂',n:'Kue Tart',c:16,p:42,t:8}];
+const CL=[0x6c8cff,0x58b87a,0xe67e9a,0xf0a040,0x9b6bd6,0x40b5c4],DUR=60;
+let S=null,tm,DT=.016,nk=0,kb=0;
+function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('on');clearTimeout(tm);tm=setTimeout(()=>e.classList.remove('on'),2200)}
+function ov(h){$('#ov').innerHTML='<div class="box">'+h+'</div>';$('#ov').classList.add('on');if(S)S.run=false;if(document.exitPointerLock)document.exitPointerLock()}
+
+/* ===== Dunia 3D ===== */
+const cv=$('#c'),ren=new THREE.WebGLRenderer({canvas:cv,antialias:true});
+ren.setPixelRatio(Math.min(devicePixelRatio,2));
+const sc=new THREE.Scene(),cam=new THREE.PerspectiveCamera(72,1,.1,60);
+function rs(){ren.setSize(innerWidth,innerHeight);cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix()}rs();addEventListener('resize',rs);
+const amb=new THREE.AmbientLight(0xffffff,.75),sun=new THREE.DirectionalLight(0xffffff,.6),lamp=new THREE.PointLight(0xffd9a0,.3,22);
+sun.position.set(4,8,6);lamp.position.set(0,3.1,0);sc.add(amb,sun,lamp);
+const DAY=new THREE.Color(0xbfe6ff),NIGHT=new THREE.Color(0x15122e);sc.background=DAY.clone();
+const M=c=>new THREE.MeshLambertMaterial({color:c});
+function box(w,h,d,x,y,z,c,p){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),M(c));m.position.set(x,y,z);(p||sc).add(m);return m}
+const tx={};
+function spr(t,s,f){f=f||96;const key=t+f;if(!tx[key]){const k=document.createElement('canvas');k.width=k.height=128;const g=k.getContext('2d');g.font=f+'px sans-serif';g.textAlign='center';g.textBaseline='middle';g.fillText(t,64,70);tx[key]=new THREE.CanvasTexture(k)}
+  const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:tx[key],transparent:true,depthWrite:false}));sp.scale.set(s,s,1);return sp}
+function person(sh,hat){const g=new THREE.Group();
+  box(.5,.8,.3,0,.8,0,sh,g);box(.14,.7,.14,-.32,.8,0,sh,g);box(.14,.7,.14,.32,.8,0,sh,g);
+  box(.18,.5,.2,-.12,.25,0,0x444466,g);box(.18,.5,.2,.12,.25,0,0x444466,g);
+  const h=new THREE.Mesh(new THREE.SphereGeometry(.22,12,10),M(0xf1c9a5));h.position.y=1.4;g.add(h);
+  box(.05,.05,.04,-.08,1.43,.2,0x222222,g);box(.05,.05,.04,.08,1.43,.2,0x222222,g);
+  if(hat)box(.3,.3,.3,0,1.72,0,hat,g);return g}
+const hit=[];
+function reg(g,u,x,y,z,ry){g.userData=u;g.position.set(x,y,z);g.rotation.y=ry||0;sc.add(g);hit.push(g);return g}
+// lantai, jalan, dinding
+box(14,.1,10,0,-.05,0,0xf6dfc0);box(26,.1,12,0,-.06,11,0x9aa3ad);
+[[14,3.4,.2,0,1.7,-5],[.2,3.4,10,-7,1.7,0],[.2,3.4,10,7,1.7,0],[5.8,3.4,.2,-4.1,1.7,5],[5.8,3.4,.2,4.1,1.7,5],[2.4,.9,.2,0,2.95,5]].forEach(a=>box(a[0],a[1],a[2],a[3],a[4],a[5],0xffd6e4));
+const sign=spr('🧁',1.4);sign.position.set(0,3.8,5.2);sc.add(sign);
+// kasir
+box(6,1.1,.9,-2.2,.55,1.2,0xff9ec0);box(6.2,.1,1.1,-2.2,1.15,1.2,0xffffff);box(.5,.35,.4,-.6,1.37,1.2,0x333333);
+const cashier=person(0x7aa2ff);cashier.position.set(-3.6,0,.25);sc.add(cashier);
+const stockSp={};C.forEach((c,i)=>{const s=spr(c.e,.6);s.position.set(-4.6+i*.8,1.55,1.2);sc.add(s);stockSp[c.k]=s});
+// dapur
+box(5.6,1.1,1,3.6,.55,-3.2,0xc9a27a);box(5.8,.1,1.2,3.6,1.15,-3.2,0xffffff);
+box(1.6,1.8,.8,5.6,.9,-4.5,0x444444);
+const glow=box(.8,.6,.05,5.6,1,-4.09,0xff9f43);glow.material=new THREE.MeshBasicMaterial({color:0x553322});
+C.forEach((c,i)=>{const g=new THREE.Group();box(.7,.08,.6,0,0,0,0xb98a5e,g);const s=spr(c.e,.7);s.position.y=.45;g.add(s);const p=spr(c.c+'💰',.6,46);p.position.y=1;g.add(p);reg(g,{a:'bake',k:c.k},1.5+i*1.2,1.24,-3.2)});
+const cook=person(0xffffff,0xffffff),cl2=spr('⚡',.7,46);cl2.position.y=2.2;cook.add(cl2);reg(cook,{a:'up'},2.6,0,-4.1);
+// pengemis
+const beg=person(0x7a6a55);const bs=spr('🙏',.6);bs.position.y=2;beg.add(bs);reg(beg,{a:'beg'},1.8,0,7.4,Math.PI);beg.visible=false;
+// tiang lampu jalan dekor
+box(.15,3,.15,-3.5,1.5,8,0x555555);
+
+/* ===== Logika game ===== */
+function init(){S={day:1,money:40,rep:5,stock:{},q:[],cur:null,prog:0,lvl:0,id:1};C.forEach(c=>S.stock[c.k]=0);startDay()}
+function startDay(){Object.assign(S,{ph:'open',t:0,cust:[],th:[],thS:[],bs:'wait',bsh:0,sp:1,m0:S.money,st:0,run:true});$('#ov').classList.remove('on')}
+function bake(d){
+  if(!S.cur&&S.q.length){S.cur=S.q.shift();S.prog=0}
+  if(S.cur){S.prog+=d/(S.cur.t*Math.pow(.8,S.lvl));
+    if(S.prog>=1){S.stock[S.cur.k]++;toast('✅ '+S.cur.e+' '+S.cur.n+' matang!');S.cur=null;S.prog=0}}}
+function closeShop(){
+  if(S.bs==='wait'){S.rep-=1;toast('😞 Pengemis pergi lapar (-1❤️)')}
+  S.cust=[];S.ph='night';S.t=0;
+  const n=Math.min(1+Math.floor(S.day/2),4);let t=2;
+  for(let i=0;i<n;i++){S.thS.push(t);t+=R(3,5)}
+  setTimeout(()=>toast('🌙 Toko tutup! Awas pencuri…'),800)}
+function steal(h){
+  S.th=S.th.filter(x=>x!==h);
+  const pool=[];C.forEach(c=>{for(let i=0;i<S.stock[c.k];i++)pool.push(c.k)});
+  const n=Math.min(pool.length,2+S.day);
+  for(let i=0;i<n;i++){const j=Math.floor(Math.random()*pool.length);S.stock[pool[j]]--;pool.splice(j,1)}
+  const loss=Math.floor(S.money*.1);S.money-=loss;S.st+=n;
+  toast('🦹 Pencuri kabur bawa '+n+' kue & '+loss+'💰!')}
+function endDay(){
+  S.run=false;if(S.rep<=0)return over();
+  ov('<h2>🌅 Hari '+S.day+' selesai</h2><p>Laba hari ini: <b>'+(S.money-S.m0>=0?'+':'')+(S.money-S.m0)+' 💰</b></p><p>Kue dicuri: '+S.st+'</p><p>Uang: '+S.money+' 💰 · Reputasi: '+S.rep+' ❤️</p><button class="b" data-a="next">Buka Hari '+(S.day+1)+'</button>')}
+function over(){S.run=false;ov('<h2>💔 Toko Bangkrut</h2><p>Reputasi habis. Kamu bertahan sampai hari <b>'+S.day+'</b>.</p><button class="b" data-a="retry">Main Lagi</button>')}
+function tick(d){
+  if(S.ph==='open'){
+    S.t+=d;
+    if(S.t>3&&!S.bsh){S.bsh=1;toast('🧎 Pengemis datang di depan toko! Beri dia kue')}
+    S.sp-=d;
+    if(S.sp<=0&&S.cust.length<4&&S.t<DUR-8){S.sp=Math.max(1.5,R(3,6)-S.day*.25);
+      const used=S.cust.map(c=>c.s),s=[0,1,2,3].find(i=>!used.includes(i));
+      S.cust.push({id:S.id++,s:s,k:C[Math.floor(R(0,Math.min(C.length,2+S.day)))].k,pat:1})}
+    S.cust.forEach(c=>c.pat-=d/28);
+    const lost=S.cust.filter(c=>c.pat<=0);
+    if(lost.length){S.rep-=.5*lost.length;S.cust=S.cust.filter(c=>c.pat>0);toast('😠 Pelanggan pergi (-'+.5*lost.length+'❤️)')}
+    if(S.t>=DUR)closeShop();
+  }else{
+    S.t+=d;
+    while(S.thS.length&&S.thS[0]<=S.t){S.thS.shift();S.th.push({id:S.id++,p:0,hp:3,v:.12+S.day*.012,fl:0})}
+    S.th.forEach(h=>{h.p+=h.v*d;h.fl=Math.max(0,h.fl-d)});
+    S.th.filter(h=>h.p>=1).forEach(steal);
+    if(!S.thS.length&&!S.th.length)endDay();
+  }
+  bake(d);if(S.run&&S.rep<=0)over()}
+function act(u){
+  if(!S||!S.run)return;
+  const a=u.a;
+  if(a==='bake'){const c=C.find(x=>x.k===u.k);
+    if(S.money<c.c)toast('Uang kurang 💸');else if(S.q.length>=4)toast('Antrean dapur penuh');
+    else{S.money-=c.c;S.q.push(c);toast('👩‍🍳 Koki mulai '+c.e)}}
+  else if(a==='up'){const uc=50*(S.lvl+1);
+    if(S.lvl>=4)toast('Koki sudah secepat kilat ⚡');else if(S.money<uc)toast('Butuh '+uc+'💰');
+    else{S.money-=uc;S.lvl++;toast('⚡ Koki makin cepat!')}}
+  else if(a==='cust'){
+    const c=S.cust.find(x=>x.id===u.id);if(!c)return;const k=C.find(x=>x.k===c.k);
+    if(S.stock[c.k]>0){S.stock[c.k]--;const tip=c.pat>.5?2:0;S.money+=k.p+tip;S.cust=S.cust.filter(x=>x!==c);kb=.4;toast('💵 +'+(k.p+tip)+(tip?' (tip!)':''))}
+    else toast('Stok '+k.e+' habis! Suruh koki panggang')}
+  else if(a==='beg'){
+    if(S.ph!=='open'||S.bs!=='wait')return;
+    const k=C.find(c=>S.stock[c.k]>0);
+    if(!k){toast('Etalase kosong! Panggang kue dulu');return}
+    S.stock[k.k]--;S.bs='fed';S.rep+=1;
+    if(Math.random()<.4){const g=Math.floor(R(10,26));S.money+=g;toast('🙏 Didoakan: +1❤️ & bonus '+g+'💰')}
+    else toast('🙏 Terima kasih! +1❤️')}
+  else if(a==='thief'){
+    const h=S.th.find(x=>x.id===u.id);if(!h)return;h.hp--;h.fl=.25;
+    if(h.hp<=0){S.th=S.th.filter(x=>x!==h);S.money+=12;toast('🚔 Pencuri tertangkap! +12💰')}}}
+function lab(u){
+  if(!S||!S.run)return'';
+  if(u.a==='cust'){const c=S.cust.find(x=>x.id===u.id);if(!c)return'';const k=C.find(x=>x.k===c.k);return'Layani pelanggan: '+k.e+' (stok '+S.stock[c.k]+')'}
+  if(u.a==='bake'){const c=C.find(x=>x.k===u.k);return'Panggang '+c.e+' '+c.n+' (modal '+c.c+'💰)'}
+  if(u.a==='beg')return'Beri kue ke pengemis 🙏';
+  if(u.a==='thief')return'TANGKAP PENCURI! 🦹';
+  if(u.a==='up')return S.lvl>=4?'Koki sudah maksimal':'Koki lebih cepat ('+50*(S.lvl+1)+'💰)';return''}
+
+/* ===== Entitas 3D ===== */
+const vc=new Map(),vt=new Map();
+function s3(m,list,mk,up){
+  const ids=new Set(list.map(o=>o.id));
+  m.forEach((g,id)=>{if(!ids.has(id)){sc.remove(g);hit.splice(hit.indexOf(g),1);m.delete(id)}});
+  list.forEach(o=>{let g=m.get(o.id);if(!g){g=mk(o);g.userData.id=o.id;sc.add(g);hit.push(g);m.set(o.id,g)}up(g,o)})}
+function mkCust(o){const g=person(CL[o.id%CL.length]),k=C.find(x=>x.k===o.k);
+  const b=spr(k.e,.6);b.position.y=2.05;g.add(b);
+  const bar=new THREE.Sprite(new THREE.SpriteMaterial({color:0x35b97a}));bar.scale.set(.8,.08,1);bar.position.y=1.78;g.add(bar);
+  g.userData={a:'cust',bar:bar};g.position.set(0,0,5.6);g.rotation.y=Math.PI;return g}
+function upCust(g,o){const tx2=-4.4+1.3*o.s,f=Math.min(1,DT*2.5);
+  g.position.x+=(tx2-g.position.x)*f;g.position.z+=(2.7-g.position.z)*f;
+  const bar=g.userData.bar;bar.scale.x=.8*Math.max(.02,o.pat);bar.material.color.set(o.pat>.5?0x35b97a:o.pat>.25?0xf4b400:0xe53935)}
+function mkTh(){const g=person(0x222222,0x111111);g.userData={a:'thief',hp:-1,sp:null};return g}
+function upTh(g,o){
+  const x=1.2+(-2.6-1.2)*o.p,z=6.5+(2.3-6.5)*o.p;
+  g.position.set(x,Math.abs(Math.sin(o.p*40))*.08,z);g.rotation.y=Math.atan2(-3.8,-4.2);
+  g.scale.setScalar(o.fl>0?1.2:1);
+  if(g.userData.hp!==o.hp){if(g.userData.sp)g.remove(g.userData.sp);const s=spr('❤️'.repeat(Math.max(o.hp,1)),.9,40);s.position.y=2.1;g.add(s);g.userData.sp=s;g.userData.hp=o.hp}}
+
+/* ===== Pemain & kontrol ===== */
+let px=2.6,pz=.4,yaw=Math.PI,pitch=0;const K={},J={x:0,y:0},rc=new THREE.Raycaster();
+function blk(x,z){
+  if(Math.abs(x)>6.6&&z<5.45)return 1;if(Math.abs(x)>10||z<-4.2||z>10.5)return 1;
+  if(z>4.55&&z<5.45&&Math.abs(x)>1.1)return 1;
+  if(x>-5.5&&x<1.1&&z>.45&&z<1.95)return 1;
+  if(x>.7&&x<6.7&&z<-2.4)return 1;return 0}
+function move(dt){
+  let f=(K.KeyW||K.ArrowUp?1:0)-(K.KeyS||K.ArrowDown?1:0)-J.y,s=(K.KeyD||K.ArrowRight?1:0)-(K.KeyA||K.ArrowLeft?1:0)+J.x;
+  const l=Math.hypot(f,s);if(l>1){f/=l;s/=l}
+  const sy=Math.sin(yaw),cy=Math.cos(yaw),dx=(-sy*f+cy*s)*3.2*dt,dz=(-cy*f-sy*s)*3.2*dt;
+  if(!blk(px+dx,pz))px+=dx;if(!blk(px,pz+dz))pz+=dz;
+  cam.position.set(px,1.6,pz);cam.rotation.set(pitch,yaw,0,'YXZ')}
+function pick(nx,ny){
+  rc.setFromCamera({x:nx,y:ny},cam);
+  const h=rc.intersectObjects(hit.filter(o=>o.visible),true)[0];if(!h||h.distance>7.5)return null;
+  let o=h.object;while(o&&!(o.userData&&o.userData.a))o=o.parent;return o?o.userData:null}
+function interact(nx,ny){const u=pick(nx,ny);if(u)act(u)}
+addEventListener('keydown',e=>{K[e.code]=1;if(e.code==='KeyE'||e.code==='Space'){e.preventDefault();interact(0,0)}});
+addEventListener('keyup',e=>K[e.code]=0);
+document.addEventListener('mousemove',e=>{if(document.pointerLockElement===cv){yaw-=e.movementX*.0025;pitch=cl(pitch-e.movementY*.0025,-1.3,1.3)}});
+cv.addEventListener('mousedown',()=>{if(document.pointerLockElement!==cv){if(S&&S.run&&cv.requestPointerLock)cv.requestPointerLock()}else interact(0,0)});
+const tch={};
+cv.addEventListener('touchstart',e=>{for(const t of e.changedTouches)tch[t.identifier]={L:t.clientX<innerWidth/2,x:t.clientX,y:t.clientY,x0:t.clientX,y0:t.clientY,t0:performance.now()}},{passive:true});
+cv.addEventListener('touchmove',e=>{for(const t of e.changedTouches){const o=tch[t.identifier];if(!o)continue;
+  if(o.L){J.x=cl((t.clientX-o.x0)/50,-1,1);J.y=cl((t.clientY-o.y0)/50,-1,1)}
+  else{yaw-=(t.clientX-o.x)*.005;pitch=cl(pitch-(t.clientY-o.y)*.005,-1.3,1.3);o.x=t.clientX;o.y=t.clientY}}},{passive:true});
+function tend(e){for(const t of e.changedTouches){const o=tch[t.identifier];if(!o)continue;
+  if(o.L)J.x=J.y=0;
+  if(Math.hypot(t.clientX-o.x0,t.clientY-o.y0)<10&&performance.now()-o.t0<300)interact(t.clientX/innerWidth*2-1,-(t.clientY/innerHeight)*2+1);
+  delete tch[t.identifier]}}
+cv.addEventListener('touchend',tend);cv.addEventListener('touchcancel',tend);
+document.addEventListener('pointerdown',e=>{
+  const b=e.target.closest('[data-a]');if(!b)return;const a=b.dataset.a;
+  if(a==='start'||a==='retry')init();else if(a==='next'){S.day++;startDay()}else return;
+  if(cv.requestPointerLock&&!('ontouchstart' in window))try{cv.requestPointerLock()}catch(x){}});
+
+/* ===== Render ===== */
+let last=performance.now(),pt='';
+function loop(now){
+  const dt=Math.min((now-last)/1000,.1);last=now;DT=dt;
+  if(S&&S.run)tick(dt);
+  if(!$('#ov').classList.contains('on'))move(dt);else{cam.position.set(px,1.6,pz);cam.rotation.set(pitch,yaw,0,'YXZ')}
+  const night=S&&S.ph==='night';nk+=((night?1:0)-nk)*Math.min(1,dt*1.5);
+  sc.background.copy(DAY).lerp(NIGHT,nk);amb.intensity=.75-.45*nk;sun.intensity=.6-.5*nk;lamp.intensity=.3+1.1*nk;
+  if(S){
+    s3(vc,S.cust,mkCust,upCust);s3(vt,S.th,mkTh,upTh);
+    beg.visible=S.ph==='open'&&!!S.bsh&&S.bs==='wait';
+    C.forEach(c=>stockSp[c.k].material.opacity=S.stock[c.k]>0?1:.2);
+    glow.material.color.set(S.cur?0xff9f43:0x553322);
+    kb=Math.max(0,kb-dt);cashier.position.y=kb>0?Math.abs(Math.sin(kb*14))*.15:0;
+    cook.position.y=S.cur?Math.abs(Math.sin(now/120))*.06:0;
+    $('#hDay').textContent='📅 Hari '+S.day;$('#hMoney').textContent='💰 '+S.money;
+    $('#hRep').textContent='❤️ '+(S.rep%1?S.rep.toFixed(1):S.rep);
+    $('#hPh').textContent=S.ph==='open'?'🌞 Buka':'🌙 Tutup';
+    $('#tBar').style.width=Math.min(100,S.ph==='open'?S.t/DUR*100:S.t/24*100)+'%';
+    $('#stockT').textContent=C.map(c=>c.e+' '+S.stock[c.k]).join('   ');
+    $('#ovenT').textContent=S.cur?'🔥 '+S.cur.e+' '+Math.round(S.prog*100)+'%'+(S.q.length?' · antre '+S.q.map(x=>x.e).join(''):''):'🔥 Oven kosong';
+    const u=pick(0,0),p=u?lab(u):'',pe=$('#prompt');
+    if(p!==pt){pt=p;pe.textContent=p;pe.style.display=p?'block':'none'}
+  }
+  ren.render(sc,cam);requestAnimationFrame(loop)}
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
