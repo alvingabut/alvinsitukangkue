@@ -14,8 +14,8 @@ html,body{margin:0;height:100%;overflow:hidden;background:#bfe6ff;font-family:sy
 .pbtn{pointer-events:auto;border:0;border-radius:10px;background:#ff7ea8;color:#fff;font-size:1rem;padding:2px 10px;cursor:pointer}
 .cross{position:fixed;left:50%;top:50%;width:14px;height:14px;margin:-7px;border:2px solid #fff;border-radius:50%;box-shadow:0 0 0 1px #0006;pointer-events:none}
 #prompt{position:fixed;left:50%;top:calc(50% + 28px);transform:translateX(-50%);background:#000a;color:#fff;font-weight:800;padding:6px 12px;border-radius:12px;pointer-events:none;text-align:center;max-width:90vw;display:none}
-.side{position:fixed;left:8px;bottom:max(8px,env(safe-area-inset-bottom));background:#fffd;color:#4a2a3a;border-radius:14px;padding:8px 12px;font-weight:800;pointer-events:none;line-height:1.6}
-.help{position:fixed;right:8px;bottom:max(8px,env(safe-area-inset-bottom));background:#0007;color:#fff;border-radius:12px;padding:6px 10px;font-size:.78rem;max-width:42vw;pointer-events:none}
+.side{position:fixed;left:8px;bottom:max(8px,env(safe-area-inset-bottom));background:#fffd;color:#4a2a3a;border-radius:14px;padding:8px 12px;font-weight:800;pointer-events:none;line-height:1.6;max-width:56vw}
+.help{position:fixed;right:8px;bottom:max(8px,env(safe-area-inset-bottom));background:#0007;color:#fff;border-radius:12px;padding:6px 10px;font-size:.78rem;max-width:40vw;pointer-events:none}
 #toast{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 70px);transform:translate(-50%,-140px);background:#fff;color:#4a2a3a;border:2px solid #ff7ea8;border-radius:14px;padding:8px 14px;font-weight:800;z-index:20;transition:transform .3s;max-width:92vw;text-align:center;pointer-events:none}
 #toast.on{transform:translate(-50%,0)}
 .ov{position:fixed;inset:0;background:#2a1030d0;display:none;align-items:center;justify-content:center;z-index:30;padding:20px}
@@ -23,27 +23,33 @@ html,body{margin:0;height:100%;overflow:hidden;background:#bfe6ff;font-family:sy
 .box{background:#fff;color:#4a2a3a;border-radius:22px;padding:22px;max-width:440px;text-align:center;line-height:1.5}
 .box h2{margin:0 0 8px}.box p{margin:6px 0}
 .b{border:0;border-radius:14px;padding:12px 22px;background:#ff7ea8;color:#fff;font:800 1rem system-ui,sans-serif;box-shadow:0 4px 0 #c94d78;cursor:pointer;margin-top:8px}
+.chat{text-align:left;margin:8px 0;max-height:46vh;overflow:auto}
+.ln{opacity:0;animation:fi .4s forwards;margin:6px 0;padding:8px 12px;border-radius:14px;max-width:88%;font-weight:700}
+.ln small{display:block;font-size:.72rem;opacity:.65}
+.ln.t{background:#e8ecff;margin-right:auto}.ln.m{background:#ffe0ec;margin-left:auto}
+@keyframes fi{to{opacity:1}}
 </style>
 </head>
 <body>
 <canvas id="c"></canvas>
 <div class="hud"><span id="hDay"></span><span id="hMoney"></span><span id="hRep"></span><div class="timer"><i id="tBar"></i></div><span id="hPh"></span><button class="pbtn" data-a="pause" aria-label="Jeda">⏸</button></div>
 <div class="cross"></div><div id="prompt"></div>
-<div class="side"><div id="stockT"></div><div id="ovenT"></div></div>
+<div class="side"><div id="stockT"></div><div id="ovenT"></div><div id="ordT"></div></div>
 <div class="help">WASD jalan · Mouse lihat · Klik / E interaksi · P/Esc jeda<br>HP: geser kiri jalan, kanan lihat, ketuk interaksi</div>
 <div id="toast"></div>
 <div class="ov on" id="ov"><div class="box"><h2>🧁 Toko Kue Manis</h2>
 <p>Kamu pemilik toko, lihat semuanya dari sudut pandang sendiri!</p>
-<p><b>Dapur:</b> arahkan ke baki kue di meja dapur lalu klik untuk menyuruh koki memanggang. <b>Kasir:</b> klik pelanggan untuk melayani. <b>Pengemis:</b> jalan ke luar toko dan beri dia kue tiap hari.</p>
-<p><b>Malam:</b> pencuri masuk. Klik 3x untuk menangkap sebelum sampai ke etalase! Klik koki untuk upgrade kecepatan.</p>
+<p><b>Dapur:</b> klik baki kue di meja dapur, koki akan mengaduk, memanggang, lalu menghias. <b>Kasir:</b> klik pelanggan untuk melayani. <b>Pengemis:</b> beri dia kue tiap hari.</p>
+<p><b>Pre-order:</b> terima pesanan 4 hari sebelum kue jadi, lewat 📱 telepon (online) atau pelanggan 📋 (langsung). Antar tepat waktu atau reputasi turun!</p>
+<p><b>Malam:</b> pencuri masuk. Klik 3x untuk menangkap. Klik koki untuk upgrade kecepatan.</p>
 <button class="b" data-a="start">Mulai Berjualan</button></div></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 const $=s=>document.querySelector(s),R=(a,b)=>a+Math.random()*(b-a),cl=(v,a,b)=>Math.max(a,Math.min(b,v));
 const C=[{k:'roti',e:'🍞',n:'Roti',c:4,p:10,t:3},{k:'cup',e:'🧁',n:'Cupcake',c:6,p:16,t:4},{k:'donat',e:'🍩',n:'Donat',c:8,p:21,t:5},{k:'tart',e:'🎂',n:'Kue Tart',c:16,p:42,t:8}];
-const CL=[0x6c8cff,0x58b87a,0xe67e9a,0xf0a040,0x9b6bd6,0x40b5c4],DUR=60;
-let S=null,tm,DT=.016,nk=0,kb=0;
-function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('on');clearTimeout(tm);tm=setTimeout(()=>e.classList.remove('on'),2200)}
+const CL=[0x6c8cff,0x58b87a,0xe67e9a,0xf0a040,0x9b6bd6,0x40b5c4],DUR=60,NM=['Rina','Budi','Sari','Dewi','Andi','Mita','Joko','Lia'],SN=['Mengaduk adonan 🥣','Memanggang 🔥','Menghias ✨'];
+let S=null,tm,DT=.016,nk=0,kb=0,PO=null;
+function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('on');clearTimeout(tm);tm=setTimeout(()=>e.classList.remove('on'),2400)}
 function ov(h){$('#ov').innerHTML='<div class="box">'+h+'</div>';$('#ov').classList.add('on');if(S)S.run=false;if(document.exitPointerLock)document.exitPointerLock()}
 
 /* ===== Dunia 3D ===== */
@@ -75,27 +81,39 @@ const sign=spr('🧁',1.4);sign.position.set(0,3.8,5.2);sc.add(sign);
 box(6,1.1,.9,-2.2,.55,1.2,0xff9ec0);box(6.2,.1,1.1,-2.2,1.15,1.2,0xffffff);box(.5,.35,.4,-.6,1.37,1.2,0x333333);
 const cashier=person(0x7aa2ff);cashier.position.set(-3.6,0,.25);sc.add(cashier);
 const stockSp={};C.forEach((c,i)=>{const s=spr(c.e,.6);s.position.set(-4.6+i*.8,1.55,1.2);sc.add(s);stockSp[c.k]=s});
+// telepon pesanan online
+const phn=new THREE.Group(),ps=spr('📱',.7),bl=spr('🔔',.5);box(.3,.06,.5,0,0,0,0x222222,phn);ps.position.y=.45;bl.position.set(.25,.95,0);phn.add(ps,bl);reg(phn,{a:'phone'},.3,1.2,1.2);
 // dapur
 box(5.6,1.1,1,3.6,.55,-3.2,0xc9a27a);box(5.8,.1,1.2,3.6,1.15,-3.2,0xffffff);
 box(1.6,1.8,.8,5.6,.9,-4.5,0x444444);
 const glow=box(.8,.6,.05,5.6,1,-4.09,0xff9f43);glow.material=new THREE.MeshBasicMaterial({color:0x553322});
 C.forEach((c,i)=>{const g=new THREE.Group();box(.7,.08,.6,0,0,0,0xb98a5e,g);const s=spr(c.e,.7);s.position.y=.45;g.add(s);const p=spr(c.c+'💰',.6,46);p.position.y=1;g.add(p);reg(g,{a:'bake',k:c.k},1.5+i*1.2,1.24,-3.2)});
 const cook=person(0xffffff,0xffffff),cl2=spr('⚡',.7,46);cl2.position.y=2.2;cook.add(cl2);reg(cook,{a:'up'},2.6,0,-4.1);
+// efek memasak: ikon tahap, bar progres, uap
+const SG=['🥣','🔥','✨'].map(t=>{spr(t,1);return tx[t+96]}),wk=spr('🥣',1),
+ stm=[0,1,2].map(()=>{const s=spr('💨',.5);sc.add(s);s.visible=false;return s}),
+ pbg=new THREE.Sprite(new THREE.SpriteMaterial({color:0x553344})),pb=new THREE.Sprite(new THREE.SpriteMaterial({color:0xff7ea8}));
+pbg.scale.set(1.5,.16,1);pbg.position.set(3.6,2.6,-3.25);pb.scale.set(1.4,.1,1);pb.position.z=-3.2;pb.position.y=2.6;
+wk.visible=pb.visible=pbg.visible=false;sc.add(wk,pbg,pb);
 // pengemis
 const beg=person(0x7a6a55);const bs=spr('🙏',.6);bs.position.y=2;beg.add(bs);reg(beg,{a:'beg'},1.8,0,7.4,Math.PI);beg.visible=false;
-// tiang lampu jalan dekor
 box(.15,3,.15,-3.5,1.5,8,0x555555);
 
 /* ===== Logika game ===== */
-function init(){S={day:1,money:40,rep:5,stock:{},q:[],cur:null,prog:0,lvl:0,id:1};C.forEach(c=>S.stock[c.k]=0);startDay()}
-function startDay(){Object.assign(S,{ph:'open',t:0,cust:[],th:[],thS:[],bs:'wait',bsh:0,sp:1,m0:S.money,st:0,run:true});$('#ov').classList.remove('on')}
+function init(){S={day:1,money:40,rep:5,stock:{},q:[],cur:null,prog:0,lvl:0,id:1,orders:[]};C.forEach(c=>S.stock[c.k]=0);startDay()}
+function startDay(){Object.assign(S,{ph:'open',t:0,cust:[],th:[],thS:[],bs:'wait',bsh:0,sp:1,m0:S.money,st:0,run:true,
+  pk:S.orders.filter(o=>!o.done&&o.due===S.day).map((o,i)=>({o:o,at:4+i*7})),inc:null,rt:R(6,12)});
+  $('#ov').classList.remove('on');
+  const n=S.pk.length;if(n)setTimeout(()=>toast('📋 '+n+' pesanan pre-order jatuh tempo hari ini!'),600)}
 function bake(d){
   if(!S.cur&&S.q.length){S.cur=S.q.shift();S.prog=0}
   if(S.cur){S.prog+=d/(S.cur.t*Math.pow(.8,S.lvl));
     if(S.prog>=1){S.stock[S.cur.k]++;toast('✅ '+S.cur.e+' '+S.cur.n+' matang!');S.cur=null;S.prog=0}}}
 function closeShop(){
   if(S.bs==='wait'){S.rep-=1;toast('😞 Pengemis pergi lapar (-1❤️)')}
-  S.cust=[];S.ph='night';S.t=0;
+  const mis=S.orders.filter(o=>!o.done&&o.due<=S.day);
+  if(mis.length){mis.forEach(o=>o.done=1);S.rep-=mis.length;setTimeout(()=>toast('😞 '+mis.length+' pesanan gagal diantar (-'+mis.length+'❤️)'),1500)}
+  S.inc=null;S.cust=[];S.ph='night';S.t=0;
   const n=Math.min(1+Math.floor(S.day/2),4);let t=2;
   for(let i=0;i<n;i++){S.thS.push(t);t+=R(3,5)}
   setTimeout(()=>toast('🌙 Toko tutup! Awas pencuri…'),800)}
@@ -108,10 +126,22 @@ function steal(h){
   toast('🦹 Pencuri kabur bawa '+n+' kue & '+loss+'💰!')}
 function endDay(){
   S.run=false;if(S.rep<=0)return over();
-  ov('<h2>🌅 Hari '+S.day+' selesai</h2><p>Laba hari ini: <b>'+(S.money-S.m0>=0?'+':'')+(S.money-S.m0)+' 💰</b></p><p>Kue dicuri: '+S.st+'</p><p>Uang: '+S.money+' 💰 · Reputasi: '+S.rep+' ❤️</p><button class="b" data-a="next">Buka Hari '+(S.day+1)+'</button>')}
+  ov('<h2>🌅 Hari '+S.day+' selesai</h2><p>Laba hari ini: <b>'+(S.money-S.m0>=0?'+':'')+(S.money-S.m0)+' 💰</b></p><p>Kue dicuri: '+S.st+'</p><p>Pesanan aktif: '+S.orders.filter(o=>!o.done).length+' 📋</p><p>Uang: '+S.money+' 💰 · Reputasi: '+S.rep+' ❤️</p><button class="b" data-a="next">Buka Hari '+(S.day+1)+'</button>')}
 function over(){S.run=false;ov('<h2>💔 Toko Bangkrut</h2><p>Reputasi habis. Kamu bertahan sampai hari <b>'+S.day+'</b>.</p><button class="b" data-a="retry">Main Lagi</button>')}
 function pause(){if(!S||!S.run)return;ov('<h2>⏸ Game Dijeda</h2><p>Waktu, pelanggan, dan pencuri berhenti.</p><button class="b" data-a="resume">▶ Lanjutkan</button>');S.paused=1}
 function resume(){if(!S||!S.paused)return;S.paused=0;S.run=true;$('#ov').classList.remove('on')}
+/* --- pre-order: dipesan 4 hari sebelum jadi --- */
+function genOrder(ch){const k=C[Math.floor(R(0,C.length))],n=k.k==='tart'?Math.ceil(R(1,2.5)):Math.ceil(R(2,5)),total=Math.round(k.p*n*1.3);
+  return{id:S.id++,k:k.k,n:n,ch:ch,who:NM[Math.floor(R(0,NM.length))],due:S.day+4,total:total,dp:Math.round(total/2),done:0}}
+function openOrder(ch,c){const o=genOrder(ch),k=C.find(x=>x.k===o.k),e=k.e,on=ch==='on';PO={o:o,c:c};
+  const L=on?[['t','📱 '+o.who+' (online)','Kak, aku mau pre-order '+o.n+' '+e+' '+k.n+', bisa?'],['m','🧁 Kamu','Bisa kak! Pesanan harus masuk 4 hari sebelum kue jadi ya, jadi siap hari ke-'+o.due+'.'],['t','📱 '+o.who,'Siap! Nanti kurir ojol yang ambil ya 🛵'],['m','🧁 Kamu','Total '+o.total+'💰, DP 50% = '+o.dp+'💰 ya kak.']]
+  :[['t','🧑 '+o.who,'Halo! Aku mau pesan '+o.n+' '+e+' '+k.n+' untuk acara keluarga.'],['m','🧁 Kamu','Wah boleh! Kapan butuhnya?'],['t','🧑 '+o.who,'4 hari lagi ya, nanti aku ambil sendiri ke sini.'],['m','🧁 Kamu','Oke, siap hari ke-'+o.due+'. Total '+o.total+'💰, DP 50% = '+o.dp+'💰 sekarang.']];
+  ov('<h2>'+(on?'📱 Pesanan Online':'📋 Pesanan Langsung')+'</h2><div class="chat">'+L.map((l,i)=>'<div class="ln '+l[0]+'" style="animation-delay:'+i*.7+'s"><small>'+l[1]+'</small>'+l[2]+'</div>').join('')+'</div><button class="b" data-a="acc">✅ Terima (+'+o.dp+'💰 DP)</button> <button class="b" data-a="rej" style="background:#999;box-shadow:0 4px 0 #666">❌ Tolak</button>')}
+function decide(ok){if(!PO)return;const o=PO.o,c=PO.c;PO=null;
+  if(c)S.cust=S.cust.filter(x=>x!==c);else S.inc=null;
+  S.run=true;$('#ov').classList.remove('on');
+  if(ok){S.money+=o.dp;S.orders.push(o);toast('👩‍🍳 "Siap, ditunggu hari ke-'+o.due+'!" DP +'+o.dp+'💰')}
+  else toast('Pesanan ditolak')}
 function tick(d){
   if(S.ph==='open'){
     S.t+=d;
@@ -119,10 +149,16 @@ function tick(d){
     S.sp-=d;
     if(S.sp<=0&&S.cust.length<4&&S.t<DUR-8){S.sp=Math.max(1.5,R(3,6)-S.day*.25);
       const used=S.cust.map(c=>c.s),s=[0,1,2,3].find(i=>!used.includes(i));
-      S.cust.push({id:S.id++,s:s,k:C[Math.floor(R(0,Math.min(C.length,2+S.day)))].k,pat:1})}
-    S.cust.forEach(c=>c.pat-=d/28);
+      S.cust.push({id:S.id++,s:s,k:C[Math.floor(R(0,Math.min(C.length,2+S.day)))].k,pat:1,ord:Math.random()<.3&&S.orders.filter(o=>!o.done).length<5&&!S.cust.some(c=>c.ord)?1:0})}
+    const pk=S.pk.find(p=>p.at<=S.t);
+    if(pk&&S.cust.length<4){S.pk.splice(S.pk.indexOf(pk),1);const u=S.cust.map(c=>c.s);
+      S.cust.push({id:S.id++,s:[0,1,2,3].find(i=>!u.includes(i)),k:pk.o.k,pat:1,o:pk.o});
+      toast(pk.o.ch==='on'?'🛵 Kurir datang ambil pesanan '+pk.o.who:'📦 '+pk.o.who+' datang ambil pesanan')}
+    S.rt-=d;
+    if(S.rt<=0){S.rt=R(14,22);if(!S.inc&&S.t<DUR-10&&S.orders.filter(o=>!o.done).length<5){S.inc=1;toast('📱 Ada pesan pre-order online!')}}
+    S.cust.forEach(c=>c.pat-=d/(c.o?55:28));
     const lost=S.cust.filter(c=>c.pat<=0);
-    if(lost.length){S.rep-=.5*lost.length;S.cust=S.cust.filter(c=>c.pat>0);toast('😠 Pelanggan pergi (-'+.5*lost.length+'❤️)')}
+    if(lost.length){const n=lost.filter(c=>!c.o).length;S.rep-=.5*n;S.cust=S.cust.filter(c=>c.pat>0);toast(n?'😠 Pelanggan pergi (-'+.5*n+'❤️)':'😠 Pemesan menunggu terlalu lama, pesanan batal!')}
     if(S.t>=DUR)closeShop();
   }else{
     S.t+=d;
@@ -141,8 +177,13 @@ function act(u){
   else if(a==='up'){const uc=50*(S.lvl+1);
     if(S.lvl>=4)toast('Koki sudah secepat kilat ⚡');else if(S.money<uc)toast('Butuh '+uc+'💰');
     else{S.money-=uc;S.lvl++;toast('⚡ Koki makin cepat!')}}
+  else if(a==='phone'){if(S.ph==='open'&&S.inc)openOrder('on',null);else toast('📱 Belum ada pesan baru')}
   else if(a==='cust'){
     const c=S.cust.find(x=>x.id===u.id);if(!c)return;const k=C.find(x=>x.k===c.k);
+    if(c.ord){openOrder('off',c);return}
+    if(c.o){const o=c.o;if(S.stock[o.k]<o.n){toast('Stok '+k.e+' kurang! Butuh '+o.n);return}
+      S.stock[o.k]-=o.n;const rest=o.total-o.dp,tip=c.pat>.5?5:0;S.money+=rest+tip;o.done=1;S.cust=S.cust.filter(x=>x!==c);kb=.4;
+      toast((o.ch==='on'?'🛵 "Makasih kak, meluncur!" ':'🧑 "Kuenya cantik, makasih!" ')+'+'+(rest+tip)+'💰');return}
     if(S.stock[c.k]>0){S.stock[c.k]--;const tip=c.pat>.5?2:0;S.money+=k.p+tip;S.cust=S.cust.filter(x=>x!==c);kb=.4;toast('💵 +'+(k.p+tip)+(tip?' (tip!)':''))}
     else toast('Stok '+k.e+' habis! Suruh koki panggang')}
   else if(a==='beg'){
@@ -157,9 +198,13 @@ function act(u){
     if(h.hp<=0){S.th=S.th.filter(x=>x!==h);S.money+=12;toast('🚔 Pencuri tertangkap! +12💰')}}}
 function lab(u){
   if(!S||!S.run)return'';
-  if(u.a==='cust'){const c=S.cust.find(x=>x.id===u.id);if(!c)return'';const k=C.find(x=>x.k===c.k);return'Layani pelanggan: '+k.e+' (stok '+S.stock[c.k]+')'}
+  if(u.a==='cust'){const c=S.cust.find(x=>x.id===u.id);if(!c)return'';const k=C.find(x=>x.k===c.k);
+    if(c.ord)return'Terima pesanan pre-order 📋 (jadi 4 hari lagi)';
+    if(c.o)return'Serahkan pesanan '+c.o.n+'× '+k.e+(c.o.ch==='on'?' ke kurir 🛵':'')+' (stok '+S.stock[c.k]+')';
+    return'Layani pelanggan: '+k.e+' (stok '+S.stock[c.k]+')'}
   if(u.a==='bake'){const c=C.find(x=>x.k===u.k);return'Panggang '+c.e+' '+c.n+' (modal '+c.c+'💰)'}
   if(u.a==='beg')return'Beri kue ke pengemis 🙏';
+  if(u.a==='phone')return S.inc?'📱 Baca pesanan online (masuk!)':'📱 Telepon (belum ada pesan)';
   if(u.a==='thief')return'TANGKAP PENCURI! 🦹';
   if(u.a==='up')return S.lvl>=4?'Koki sudah maksimal':'Koki lebih cepat ('+50*(S.lvl+1)+'💰)';return''}
 
@@ -170,7 +215,7 @@ function s3(m,list,mk,up){
   m.forEach((g,id)=>{if(!ids.has(id)){sc.remove(g);hit.splice(hit.indexOf(g),1);m.delete(id)}});
   list.forEach(o=>{let g=m.get(o.id);if(!g){g=mk(o);g.userData.id=o.id;sc.add(g);hit.push(g);m.set(o.id,g)}up(g,o)})}
 function mkCust(o){const g=person(CL[o.id%CL.length]),k=C.find(x=>x.k===o.k);
-  const b=spr(k.e,.6);b.position.y=2.05;g.add(b);
+  const b=spr(o.o?(o.o.ch==='on'?'🛵':'📦'):o.ord?'📋':k.e,.6);b.position.y=2.05;g.add(b);
   const bar=new THREE.Sprite(new THREE.SpriteMaterial({color:0x35b97a}));bar.scale.set(.8,.08,1);bar.position.y=1.78;g.add(bar);
   g.userData={a:'cust',bar:bar};g.position.set(0,0,5.6);g.rotation.y=Math.PI;return g}
 function upCust(g,o){const tx2=-4.4+1.3*o.s,f=Math.min(1,DT*2.5);
@@ -217,7 +262,7 @@ function tend(e){for(const t of e.changedTouches){const o=tch[t.identifier];if(!
 cv.addEventListener('touchend',tend);cv.addEventListener('touchcancel',tend);
 document.addEventListener('pointerdown',e=>{
   const b=e.target.closest('[data-a]');if(!b)return;const a=b.dataset.a;
-  if(a==='start'||a==='retry')init();else if(a==='next'){S.day++;startDay()}else if(a==='pause'){pause();return}else if(a==='resume'){resume()}else return;
+  if(a==='start'||a==='retry')init();else if(a==='next'){S.day++;startDay()}else if(a==='pause'){pause();return}else if(a==='resume'){resume()}else if(a==='acc'||a==='rej'){decide(a==='acc')}else return;
   if(cv.requestPointerLock&&!('ontouchstart' in window))try{cv.requestPointerLock()}catch(x){}});
 document.addEventListener('pointerlockchange',()=>{if(!document.pointerLockElement)pause()});
 document.addEventListener('visibilitychange',()=>{if(document.hidden)pause()});
@@ -230,19 +275,32 @@ function loop(now){
   if(!$('#ov').classList.contains('on'))move(dt);else{cam.position.set(px,1.6,pz);cam.rotation.set(pitch,yaw,0,'YXZ')}
   const night=S&&S.ph==='night';nk+=((night?1:0)-nk)*Math.min(1,dt*1.5);
   sc.background.copy(DAY).lerp(NIGHT,nk);amb.intensity=.75-.45*nk;sun.intensity=.6-.5*nk;lamp.intensity=.3+1.1*nk;
+  bl.visible=!!(S&&S.inc);ps.scale.setScalar(S&&S.inc?.7+Math.sin(now/100)*.1:.7);
   if(S){
     s3(vc,S.cust,mkCust,upCust);s3(vt,S.th,mkTh,upTh);
+    // animasi memasak: 0 mengaduk, 1 memanggang, 2 menghias
+    const sg=S.cur?(S.prog<.4?0:S.prog<.75?1:2):-1;
+    if(S.sg!==sg){S.sg=sg;if(sg>=0){wk.material.map=SG[sg];wk.material.needsUpdate=true}
+      if(sg===1)toast('👩‍🍳 "Adonan siap, masuk oven!"');else if(sg===2)toast('👩‍🍳 "Tinggal dihias sedikit…"')}
+    cook.position.x+=((sg<0?2.6:sg===1?4.6:3.6)-cook.position.x)*Math.min(1,dt*3);
+    const sw=sg>=0?Math.sin(now/(sg===0?90:160))*(sg===1?.3:.9):0;cook.children[1].rotation.x=sw;cook.children[2].rotation.x=-sw;
+    wk.visible=pb.visible=pbg.visible=sg>=0;
+    if(sg>=0){wk.position.set(sg===1?5.6:3.6,sg===1?1.2:1.9+Math.abs(Math.sin(now/150))*(sg===0?.15:.05),sg===1?-3.9:-3.2);
+      pb.scale.x=1.4*Math.max(.02,S.prog);pb.position.x=2.9+.7*S.prog}
+    stm.forEach((s,i)=>{const f=(now/900+i/3)%1;s.visible=sg===1;s.position.set(5.6+(i-1)*.25,1.6+f,-3.9);s.material.opacity=1-f});
     beg.visible=S.ph==='open'&&!!S.bsh&&S.bs==='wait';
     C.forEach(c=>stockSp[c.k].material.opacity=S.stock[c.k]>0?1:.2);
-    glow.material.color.set(S.cur?0xff9f43:0x553322);
+    glow.material.color.set(sg===1?(Math.sin(now/90)>0?0xffcc66:0xff9f43):S.cur?0xc9742f:0x553322);
     kb=Math.max(0,kb-dt);cashier.position.y=kb>0?Math.abs(Math.sin(kb*14))*.15:0;
     cook.position.y=S.cur?Math.abs(Math.sin(now/120))*.06:0;
     $('#hDay').textContent='📅 Hari '+S.day;$('#hMoney').textContent='💰 '+S.money;
     $('#hRep').textContent='❤️ '+(S.rep%1?S.rep.toFixed(1):S.rep);
     $('#hPh').textContent=S.ph==='open'?'🌞 Buka':'🌙 Tutup';
     $('#tBar').style.width=Math.min(100,S.ph==='open'?S.t/DUR*100:S.t/24*100)+'%';
+    const ao=S.orders.filter(o=>!o.done);
+    $('#ordT').textContent=ao.length?'📋 '+ao.slice(0,3).map(o=>C.find(c=>c.k===o.k).e+'×'+o.n+' H'+o.due+(o.ch==='on'?'📱':'🧑')).join(' · ')+(ao.length>3?' +'+(ao.length-3):''):'📋 Belum ada pesanan';
     $('#stockT').textContent=C.map(c=>c.e+' '+S.stock[c.k]).join('   ');
-    $('#ovenT').textContent=S.cur?'🔥 '+S.cur.e+' '+Math.round(S.prog*100)+'%'+(S.q.length?' · antre '+S.q.map(x=>x.e).join(''):''):'🔥 Oven kosong';
+    $('#ovenT').textContent=S.cur?'🔥 '+S.cur.e+' '+SN[sg]+' '+Math.round(S.prog*100)+'%'+(S.q.length?' · antre '+S.q.map(x=>x.e).join(''):''):'🔥 Oven kosong';
     const u=pick(0,0),p=u?lab(u):'',pe=$('#prompt');
     if(p!==pt){pt=p;pe.textContent=p;pe.style.display=p?'block':'none'}
   }
