@@ -169,6 +169,7 @@ function tick(d){
     if(pk&&S.cust.length<4){S.pk.splice(S.pk.indexOf(pk),1);const u=S.cust.map(c=>c.s);
       S.cust.push({id:S.id++,s:[0,1,2,3].find(i=>!u.includes(i)),k:pk.o.k,pat:1,o:pk.o});
       toast(pk.o.ch==='on'?'🛵 Kurir datang ambil pesanan '+pk.o.who:'📦 '+pk.o.who+' datang ambil pesanan')}
+    S.rt-=d;
     if(S.rt<=0){S.rt=R(14,22);if(!S.inc&&S.t<DUR-10&&S.orders.filter(o=>!o.done).length<5){S.inc=1;toast('📱 Ada pesan pre-order online!')}}
     S.cust.forEach(c=>c.pat-=d/(c.o?55:28));
     const lost=S.cust.filter(c=>c.pat<=0);
@@ -193,9 +194,6 @@ function act(u){
     else{S.money-=uc;S.lvl++;toast('⚡ Koki makin cepat!')}}
   else if(a==='phone'){if(S.ph==='open'&&S.inc)openOrder('on',null);else toast('📱 Belum ada pesan baru')}
   else if(a==='cust'){
-    const c=S.cust.find(x=>x.id===u.id);if(!c)return;const k=C.find(x=>x.k===c.k);
-    if(c.ord){openOrder('off',c);return}
-    if(c.o){const o=c.o;if(S.stock[o.k]<o.n){toast('Stok '+k.e+' kurang! Butuh '+o.n);return}
       S.stock[o.k]-=o.n;const rest=o.total-o.dp,tip=c.pat>.5?5:0;S.money+=rest+tip;o.done=1;S.cust=S.cust.filter(x=>x!==c);kb=.4;
       toast((o.ch==='on'?'🛵 "Makasih kak, meluncur!" ':'🧑 "Kuenya cantik, makasih!" ')+'+'+(rest+tip)+'💰');return}
     if(S.stock[c.k]>0){S.stock[c.k]--;const tip=c.pat>.5?2:0;S.money+=k.p+tip;S.cust=S.cust.filter(x=>x!==c);kb=.4;toast('💵 +'+(k.p+tip)+(tip?' (tip!)':''))}
@@ -204,6 +202,7 @@ function act(u){
     if(S.ph!=='open'||S.bs!=='wait')return;
     const k=C.find(c=>S.stock[c.k]>0);
     if(!k){toast('Etalase kosong! Panggang kue dulu');return}
+    S.stock[k.k]--;S.bs='fed';S.rep+=1;
     if(Math.random()<.4){const g=Math.floor(R(10,26));S.money+=g;toast('🙏 Didoakan: +1❤️ & bonus '+g+'💰')}
     else toast('🙏 Terima kasih! +1❤️')}
   else if(a==='thief'){
@@ -230,9 +229,6 @@ function s3(m,list,mk,up){
 function mkCust(o){const g=person(CL[o.id%CL.length]),k=C.find(x=>x.k===o.k);
   const b=spr(o.o?(o.o.ch==='on'?'🛵':'📦'):o.ord?'📋':k.e,.6);b.position.y=2.05;g.add(b);
   const bar=new THREE.Sprite(new THREE.SpriteMaterial({color:0x35b97a}));bar.scale.set(.8,.08,1);bar.position.y=1.78;g.add(bar);
-  g.userData={a:'cust',bar:bar};g.position.set(0,0,5.6);g.rotation.y=Math.PI;return g}
-function upCust(g,o){const tx2=-4.4+1.3*o.s,f=Math.min(1,DT*2.5);
-  g.position.x+=(tx2-g.position.x)*f;g.position.z+=(2.7-g.position.z)*f;
   const bar=g.userData.bar;bar.scale.x=.8*Math.max(.02,o.pat);bar.material.color.set(o.pat>.5?0x35b97a:o.pat>.25?0xf4b400:0xe53935)}
 function mkTh(){const g=person(0x222222,0x111111);g.userData={a:'thief',hp:-1,sp:null};return g}
 function upTh(g,o){
@@ -269,26 +265,6 @@ cv.addEventListener('touchmove',e=>{for(const t of e.changedTouches){const o=tch
   if(o.L){J.x=cl((t.clientX-o.x0)/50,-1,1);J.y=cl((t.clientY-o.y0)/50,-1,1)}
   else{yaw-=(t.clientX-o.x)*.005;pitch=cl(pitch-(t.clientY-o.y)*.005,-1.3,1.3);o.x=t.clientX;o.y=t.clientY}}},{passive:true});
 function tend(e){for(const t of e.changedTouches){const o=tch[t.identifier];if(!o)continue;
-  if(o.L)J.x=J.y=0;
-  if(Math.hypot(t.clientX-o.x0,t.clientY-o.y0)<10&&performance.now()-o.t0<300)interact(t.clientX/innerWidth*2-1,-(t.clientY/innerHeight)*2+1);
-  delete tch[t.identifier]}}
-cv.addEventListener('touchend',tend);cv.addEventListener('touchcancel',tend);
-document.addEventListener('pointerdown',e=>{
-  const b=e.target.closest('[data-a]');if(!b)return;const a=b.dataset.a;
-  if(a==='start'||a==='retry')init();else if(a==='next'){S.day++;startDay()}else if(a==='pause'){pause();return}else if(a==='resume'){resume()}else if(a==='acc'||a==='rej'){decide(a==='acc')}else return;
-  if(cv.requestPointerLock&&!('ontouchstart' in window))try{cv.requestPointerLock()}catch(x){}});
-document.addEventListener('pointerlockchange',()=>{if(!document.pointerLockElement)pause()});
-document.addEventListener('visibilitychange',()=>{if(document.hidden)pause()});
-
-/* ===== Render ===== */
-let last=performance.now(),pt='';
-function loop(now){
-  const dt=Math.min((now-last)/1000,.1);last=now;DT=dt;
-  if(S&&S.run)tick(dt);
-  if(!$('#ov').classList.contains('on'))move(dt);else{cam.position.set(px,1.6,pz);cam.rotation.set(pitch,yaw,0,'YXZ')}
-  const night=S&&S.ph==='night';nk+=((night?1:0)-nk)*Math.min(1,dt*1.5);
-  sc.background.copy(DAY).lerp(NIGHT,nk);amb.intensity=.75-.45*nk;sun.intensity=.6-.5*nk;lamp.intensity=.3+1.1*nk;
-  bl.visible=!!(S&&S.inc);ps.scale.setScalar(S&&S.inc?.7+Math.sin(now/100)*.1:.7);
   if(S){
     s3(vc,S.cust,mkCust,upCust);s3(vt,S.th,mkTh,upTh);
     // animasi memasak: 0 mengaduk, 1 memanggang, 2 menghias
