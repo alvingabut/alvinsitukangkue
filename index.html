@@ -39,7 +39,7 @@ html,body{margin:0;height:100%;overflow:hidden;background:#bfe6ff;font-family:sy
 <div id="toast"></div>
 <div class="ov on" id="ov"><div class="box"><h2>🧁 Toko Kue Manis</h2>
 <p>Kamu pemilik toko, lihat semuanya dari sudut pandang sendiri!</p>
-<p><b>Dapur:</b> klik baki kue di meja dapur, koki akan mengaduk, memanggang, lalu menghias. <b>Kasir:</b> klik pelanggan untuk melayani. <b>Pengemis:</b> beri dia kue tiap hari.</p>
+<p><b>Dapur:</b> ruang dapur ada di kanan belakang, lengkap dengan kompor, oven, kulkas, dan rak bahan. Klik baki kue di meja dapur, koki akan mengaduk, memanggang, lalu menghias. <b>Kasir:</b> klik pelanggan untuk melayani. <b>Pengemis:</b> beri dia kue tiap hari.</p>
 <p><b>Pre-order:</b> terima pesanan 4 hari sebelum kue jadi, lewat 📱 telepon (online) atau pelanggan 📋 (langsung). Antar tepat waktu atau reputasi turun!</p>
 <p><b>Malam:</b> pencuri masuk. Klik 3x untuk menangkap. Klik koki untuk upgrade kecepatan.</p>
 <button class="b" data-a="start">Mulai Berjualan</button></div></div>
@@ -86,6 +86,21 @@ const phn=new THREE.Group(),ps=spr('📱',.7),bl=spr('🔔',.5);box(.3,.06,.5,0,
 // dapur
 box(5.6,1.1,1,3.6,.55,-3.2,0xc9a27a);box(5.8,.1,1.2,3.6,1.15,-3.2,0xffffff);
 box(1.6,1.8,.8,5.6,.9,-4.5,0x444444);
+// ruang dapur: lantai keramik, kompor, kap, kulkas, rak bahan, sekat & papan nama
+for(let i=0;i<6;i++)for(let j=0;j<2;j++)box(1.04,.02,1.25,1.27+i*1.04,.01,-4.275+j*1.25,(i+j)%2?0xcfeee8:0xf4fffc);
+box(6.2,1.4,.04,3.9,1.5,-4.86,0xdff3f0);
+box(2.5,.9,.6,3.1,.45,-4.6,0x9aa3ad);box(2.6,.06,.66,3.1,.93,-4.6,0x333333);
+const bn=[2.5,3.7].map(x=>{const b=new THREE.Mesh(new THREE.CylinderGeometry(.28,.28,.03,16),new THREE.MeshBasicMaterial({color:0x222222}));b.position.set(x,.97,-4.6);sc.add(b);return b});
+const pot=new THREE.Mesh(new THREE.CylinderGeometry(.22,.2,.28,14),M(0xb0b8c4));pot.position.set(2.5,1.12,-4.6);sc.add(pot);
+const pan=spr('🍳',.6);pan.position.set(3.7,1.25,-4.6);sc.add(pan);
+box(2.6,.5,.7,3.1,2.6,-4.55,0x8a929c);box(.5,.55,.5,3.1,3.12,-4.65,0x8a929c);
+box(.9,2.1,.8,1.25,1.05,-4.5,0xf0f3f5);box(.05,.6,.05,1.62,1.2,-4.08,0x888888);
+const fr=spr('🧊',.4);fr.position.set(1.25,1.8,-4.07);sc.add(fr);
+box(.3,.06,2,6.75,1.9,-3.7,0xa0764a);['🥚','🥛','🌾','🍫'].forEach((t,i)=>{const s=spr(t,.45);s.position.set(6.7,2.2,-4.4+i*.5);sc.add(s)});
+box(.1,1.1,2.5,.7,.55,-3.65,0xff9ec0);box(6.4,.3,.15,3.9,3.15,-2.45,0xff9ec0);
+const kc=document.createElement('canvas');kc.width=256;kc.height=64;const kg=kc.getContext('2d');kg.fillStyle='#fff';kg.font='bold 44px sans-serif';kg.textAlign='center';kg.textBaseline='middle';kg.fillText('👩‍🍳 DAPUR',128,34);
+const ks=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(kc),transparent:true}));ks.scale.set(2.4,.6,1);ks.position.set(3.9,3.15,-2.33);sc.add(ks);
+const kl=new THREE.PointLight(0xffe0b0,.6,9);kl.position.set(3.9,2.8,-3.6);sc.add(kl);
 const glow=box(.8,.6,.05,5.6,1,-4.09,0xff9f43);glow.material=new THREE.MeshBasicMaterial({color:0x553322});
 C.forEach((c,i)=>{const g=new THREE.Group();box(.7,.08,.6,0,0,0,0xb98a5e,g);const s=spr(c.e,.7);s.position.y=.45;g.add(s);const p=spr(c.c+'💰',.6,46);p.position.y=1;g.add(p);reg(g,{a:'bake',k:c.k},1.5+i*1.2,1.24,-3.2)});
 const cook=person(0xffffff,0xffffff),cl2=spr('⚡',.7,46);cl2.position.y=2.2;cook.add(cl2);reg(cook,{a:'up'},2.6,0,-4.1);
@@ -154,7 +169,6 @@ function tick(d){
     if(pk&&S.cust.length<4){S.pk.splice(S.pk.indexOf(pk),1);const u=S.cust.map(c=>c.s);
       S.cust.push({id:S.id++,s:[0,1,2,3].find(i=>!u.includes(i)),k:pk.o.k,pat:1,o:pk.o});
       toast(pk.o.ch==='on'?'🛵 Kurir datang ambil pesanan '+pk.o.who:'📦 '+pk.o.who+' datang ambil pesanan')}
-    S.rt-=d;
     if(S.rt<=0){S.rt=R(14,22);if(!S.inc&&S.t<DUR-10&&S.orders.filter(o=>!o.done).length<5){S.inc=1;toast('📱 Ada pesan pre-order online!')}}
     S.cust.forEach(c=>c.pat-=d/(c.o?55:28));
     const lost=S.cust.filter(c=>c.pat<=0);
@@ -190,7 +204,6 @@ function act(u){
     if(S.ph!=='open'||S.bs!=='wait')return;
     const k=C.find(c=>S.stock[c.k]>0);
     if(!k){toast('Etalase kosong! Panggang kue dulu');return}
-    S.stock[k.k]--;S.bs='fed';S.rep+=1;
     if(Math.random()<.4){const g=Math.floor(R(10,26));S.money+=g;toast('🙏 Didoakan: +1❤️ & bonus '+g+'💰')}
     else toast('🙏 Terima kasih! +1❤️')}
   else if(a==='thief'){
@@ -291,7 +304,7 @@ function loop(now){
     beg.visible=S.ph==='open'&&!!S.bsh&&S.bs==='wait';
     C.forEach(c=>stockSp[c.k].material.opacity=S.stock[c.k]>0?1:.2);
     glow.material.color.set(sg===1?(Math.sin(now/90)>0?0xffcc66:0xff9f43):S.cur?0xc9742f:0x553322);
-    kb=Math.max(0,kb-dt);cashier.position.y=kb>0?Math.abs(Math.sin(kb*14))*.15:0;
+    bn.forEach(b=>b.material.color.set(sg>=0?0xff5a2a:0x222222));kb=Math.max(0,kb-dt);cashier.position.y=kb>0?Math.abs(Math.sin(kb*14))*.15:0;
     cook.position.y=S.cur?Math.abs(Math.sin(now/120))*.06:0;
     $('#hDay').textContent='📅 Hari '+S.day;$('#hMoney').textContent='💰 '+S.money;
     $('#hRep').textContent='❤️ '+(S.rep%1?S.rep.toFixed(1):S.rep);
