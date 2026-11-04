@@ -21,3 +21,12 @@ html,body{margin:0;height:100%;overflow:hidden;background:#bfe6ff;font-family:sy
 .ln small{display:block;font-size:.72rem;opacity:.65}
 .ln.t{background:#e8ecff;margin-right:auto}.ln.m{background:#ffe0ec;margin-left:auto}
 @keyframes fi{to{opacity:1}}
+
+.ph{border:6px solid #2a1030;border-radius:28px;padding:10px;background:#fff8fb;min-width:270px;text-align:left}
+.phh{font-weight:800;text-align:center;font-size:1.1rem}
+.phm{font-size:.8rem;text-align:center;margin:4px 0;opacity:.8}
+.phb{max-height:40vh;overflow:auto}
+.row{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #f3d3df;font-weight:700}
+.row small{display:block;font-weight:400;opacity:.65}
+.q{border:0;border-radius:9px;background:#ff7ea8;color:#fff;font:800 1.1rem system-ui;width:32px;height:32px}
+.phf{text-align:center;margin-top:8px}
