@@ -1,3 +1,17 @@
+/* ===== Tombol overlay: dipasang PERTAMA supaya tetap jalan walau bagian 3D error ===== */
+document.addEventListener('click',e=>{const b=e.target.closest('[data-a]');if(!b)return;const a=b.dataset.a;
+  try{
+    if(a==='start'||a==='retry')init();
+    else if(a==='next'){S.day++;startDay()}
+    else if(a==='pause')pause();
+    else if(a==='resume')resume();
+    else if(a==='acc')decide(true);
+    else if(a==='rej')decide(false)
+  }catch(err){alert('Error: '+err.message);console.error(err)}});
+
+if(typeof THREE==='undefined'){
+  document.querySelector('#ov').innerHTML='<div class="box"><h2>⚠️ three.js gagal dimuat</h2><p>Periksa koneksi internet lalu muat ulang halaman.</p></div>';
+  throw new Error('THREE tidak ditemukan')}
 const $=s=>document.querySelector(s),R=(a,b)=>a+Math.random()*(b-a),cl=(v,a,b)=>Math.max(a,Math.min(b,v));
 const C=[{k:'roti',e:'🍞',n:'Roti',c:4,p:10,t:3},{k:'cup',e:'🧁',n:'Cupcake',c:6,p:16,t:4},{k:'donat',e:'🍩',n:'Donat',c:8,p:21,t:5},{k:'tart',e:'🎂',n:'Kue Tart',c:16,p:42,t:8}];
 const CL=[0x6c8cff,0x58b87a,0xe67e9a,0xf0a040,0x9b6bd6,0x40b5c4],DUR=60,NM=['Rina','Budi','Sari','Dewi','Andi','Mita','Joko','Lia'],SN=['Mengaduk adonan 🥣','Memanggang 🔥','Menghias ✨'];
@@ -224,13 +238,6 @@ cv.addEventListener('touchend',e=>{for(const t of e.changedTouches){const o=TT[t
   if(Math.hypot(t.clientX-o.x0,t.clientY-o.y0)<12&&performance.now()-o.t0<350){const u=pick(t.clientX/innerWidth*2-1,-(t.clientY/innerHeight)*2+1);if(u)act(u)}}});
 
 /* ===== Tombol overlay & HUD ===== */
-document.addEventListener('click',e=>{const b=e.target.closest('[data-a]');if(!b)return;const a=b.dataset.a;
-  if(a==='start'||a==='retry')init();
-  else if(a==='next'){S.day++;startDay()}
-  else if(a==='pause')pause();
-  else if(a==='resume')resume();
-  else if(a==='acc')decide(true);
-  else if(a==='rej')decide(false)});
 function hud(){
   $('#hDay').textContent='📅 Hari '+S.day;$('#hMoney').textContent='💰 '+S.money;$('#hRep').textContent='❤️ '+S.rep;
   $('#hPh').textContent=S.ph==='open'?'☀️ Buka':'🌙 Tutup';
@@ -256,4 +263,15 @@ function loop(now){requestAnimationFrame(loop);
       if(K.w||K.arrowup)mz-=1;if(K.s||K.arrowdown)mz+=1;if(K.a||K.arrowleft)mx-=1;if(K.d||K.arrowright)mx+=1;
       for(const id in TT){const o=TT[id];if(o.L){mx+=cl((o.x-o.x0)/60,-1,1);mz+=cl((o.y-o.y0)/60,-1,1)}}
       const sp=3*d,fx_=-Math.sin(yaw),fz=-Math.cos(yaw),rx=Math.cos(yaw),rz=-Math.sin(yaw);
- 
+      const nx=px+(fx_*-mz+rx*mx)*sp,nz=pz+(fz*-mz+rz*mx)*sp;
+      if(!blocked(nx,pz))px=nx;if(!blocked(px,nz))pz=nz}
+    s3(vc,S.cust,mkCust,upCust);s3(vt,S.th,mkTh,upTh);
+    beg.visible=S.ph==='open'&&!!S.bsh&&S.bs==='wait';
+    sc.background.lerp(S.ph==='open'?DAY:NIGHT,.05);
+    hud();fx();
+    const u=S.run?pick(0,0):null,p=$('#prompt'),t=u?lab(u):'';
+    p.style.display=t?'block':'none';p.textContent=t}
+  kb=Math.max(0,kb-d);
+  cam.position.set(px,1.6-kb*.3,pz);cam.rotation.set(pitch,yaw,0);
+  ren.render(sc,cam)}
+requestAnimationFrame(loop);
