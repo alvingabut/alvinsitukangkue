@@ -195,4 +195,76 @@ function upCust(g,o){
   bar.material.color.set(o.pat>.5?0x35b97a:o.pat>.25?0xf4b400:0xe53935)}
 function mkTh(){const g=person(0x222222,0x111111);g.userData={a:'thief',hp:-1,sp:null};return g}
 
-/* >>> LANJUTAN: tempel sisa kode asli mulai dari "function upTh(g,o){" sampai akhir file di sini <<< */
+function upTh(g,o){
+  g.position.set(1.2+(-2.6-1.2)*o.p,0,6.5+(2.3-6.5)*o.p);
+  g.rotation.y=Math.PI+(o.fl>0?Math.sin(performance.now()/30)*.3:0)}
+
+/* ===== Kontrol pemain ===== */
+const K={},B=[[-5.2,.8,.75,1.65],[.8,6.4,-3.7,-2.7]],TS=('ontouch' in window)||navigator.maxTouchPoints>0;
+let yaw=Math.PI,pitch=0,px=-1,pz=-.5,mdown=0;
+cam.rotation.order='YXZ';
+function blocked(x,z){if(x<-6.6||x>6.6||z<-4.6||z>4.6)return true;return B.some(b=>x>b[0]-.3&&x<b[1]+.3&&z>b[2]-.3&&z<b[3]+.3)}
+function look(dx,dy){yaw-=dx;pitch=cl(pitch-dy,-1.2,1.2)}
+function pick(nx,ny){const rc=new THREE.Raycaster();rc.setFromCamera({x:nx,y:ny},cam);rc.far=7;
+  const r=rc.intersectObjects(hit.filter(g=>g.visible),true);
+  for(const i of r){let o=i.object;while(o&&!hit.includes(o))o=o.parent;if(o&&o.userData&&o.userData.a)return o.userData}return null}
+addEventListener('keydown',e=>{const k=e.key.toLowerCase();K[k]=1;
+  if(k==='e'){const u=pick(0,0);if(u)act(u)}
+  if(k==='p'||k==='escape')pause()});
+addEventListener('keyup',e=>K[e.key.toLowerCase()]=0);
+cv.addEventListener('mousedown',()=>{mdown=1;if(!TS&&!document.pointerLockElement&&S&&S.run&&cv.requestPointerLock)cv.requestPointerLock();
+  else{const u=pick(0,0);if(u)act(u)}});
+addEventListener('mouseup',()=>mdown=0);
+addEventListener('mousemove',e=>{if(document.pointerLockElement===cv||mdown)look(e.movementX*.003,e.movementY*.003)});
+const TT={};
+cv.addEventListener('touchstart',e=>{for(const t of e.changedTouches)TT[t.identifier]={x0:t.clientX,y0:t.clientY,x:t.clientX,y:t.clientY,t0:performance.now(),L:t.clientX<innerWidth/2}},{passive:false});
+cv.addEventListener('touchmove',e=>{e.preventDefault();for(const t of e.changedTouches){const o=TT[t.identifier];if(!o)continue;
+  if(!o.L)look((t.clientX-o.x)*.005,(t.clientY-o.y)*.005);o.x=t.clientX;o.y=t.clientY}},{passive:false});
+cv.addEventListener('touchend',e=>{for(const t of e.changedTouches){const o=TT[t.identifier];delete TT[t.identifier];if(!o)continue;
+  if(Math.hypot(t.clientX-o.x0,t.clientY-o.y0)<12&&performance.now()-o.t0<350){const u=pick(t.clientX/innerWidth*2-1,-(t.clientY/innerHeight)*2+1);if(u)act(u)}}});
+
+/* ===== Tombol overlay & HUD ===== */
+document.addEventListener('click',e=>{const b=e.target.closest('[data-a]');if(!b)return;const a=b.dataset.a;
+  if(a==='start'||a==='retry')init();
+  else if(a==='next'){S.day++;startDay()}
+  else if(a==='pause')pause();
+  else if(a==='resume')resume();
+  else if(a==='acc')decide(true);
+  else if(a==='rej')decide(false)});
+function hud(){
+  $('#hDay').textContent='📅 Hari '+S.day;$('#hMoney').textContent='💰 '+S.money;$('#hRep').textContent='❤️ '+S.rep;
+  $('#hPh').textContent=S.ph==='open'?'☀️ Buka':'🌙 Tutup';
+  $('#tBar').style.width=(S.ph==='open'?S.t/DUR*100:100)+'%';
+  $('#stockT').textContent='Stok: '+C.map(c=>c.e+S.stock[c.k]).join(' ');
+  const st=S.cur?Math.min(2,Math.floor(S.prog*3)):-1;
+  $('#ovenT').textContent=S.cur?'👩‍🍳 '+SN[st]+' · antre '+S.q.length:'👩‍🍳 Koki menganggur · antre '+S.q.length;
+  $('#ordT').textContent=S.orders.filter(o=>!o.done).map(o=>{const k=C.find(x=>x.k===o.k);return'📋 '+o.n+k.e+' h'+o.due}).join(' · ')}
+function fx(){
+  const st=S.cur?Math.min(2,Math.floor(S.prog*3)):-1;
+  wk.visible=pb.visible=pbg.visible=!!S.cur;
+  if(S.cur){wk.material.map=SG[st];wk.position.set(2.6,2.7,-4.1);pb.scale.x=1.4*Math.max(.02,S.prog);pb.position.x=2.9+.7*Math.max(.02,S.prog)}
+  stm.forEach((s,i)=>{s.visible=st===1;if(st===1){const t=performance.now()/600+i*.7;s.position.set(3.1+i*.4,1.4+(t%1)*.8,-4.5)}});
+  C.forEach(c=>stockSp[c.k].visible=S.stock[c.k]>0)}
+
+/* ===== Loop utama ===== */
+let last=performance.now();
+function loop(now){requestAnimationFrame(loop);
+  const d=Math.min(.05,(now-last)/1000);last=now;
+  if(S){
+    if(S.run){tick(d);
+      let mx=0,mz=0;
+      if(K.w||K.arrowup)mz-=1;if(K.s||K.arrowdown)mz+=1;if(K.a||K.arrowleft)mx-=1;if(K.d||K.arrowright)mx+=1;
+      for(const id in TT){const o=TT[id];if(o.L){mx+=cl((o.x-o.x0)/60,-1,1);mz+=cl((o.y-o.y0)/60,-1,1)}}
+      const sp=3*d,fx_=-Math.sin(yaw),fz=-Math.cos(yaw),rx=Math.cos(yaw),rz=-Math.sin(yaw);
+      const nx=px+(fx_*-mz+rx*mx)*sp,nz=pz+(fz*-mz+rz*mx)*sp;
+      if(!blocked(nx,pz))px=nx;if(!blocked(px,nz))pz=nz}
+    s3(vc,S.cust,mkCust,upCust);s3(vt,S.th,mkTh,upTh);
+    beg.visible=S.ph==='open'&&!!S.bsh&&S.bs==='wait';
+    sc.background.lerp(S.ph==='open'?DAY:NIGHT,.05);
+    hud();fx();
+    const u=S.run?pick(0,0):null,p=$('#prompt'),t=u?lab(u):'';
+    p.style.display=t?'block':'none';p.textContent=t}
+  kb=Math.max(0,kb-d);
+  cam.position.set(px,1.6-kb*.3,pz);cam.rotation.set(pitch,yaw,0);
+  ren.render(sc,cam)}
+requestAnimationFrame(loop);
