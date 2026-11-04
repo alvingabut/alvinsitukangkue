@@ -256,15 +256,4 @@ function loop(now){requestAnimationFrame(loop);
       if(K.w||K.arrowup)mz-=1;if(K.s||K.arrowdown)mz+=1;if(K.a||K.arrowleft)mx-=1;if(K.d||K.arrowright)mx+=1;
       for(const id in TT){const o=TT[id];if(o.L){mx+=cl((o.x-o.x0)/60,-1,1);mz+=cl((o.y-o.y0)/60,-1,1)}}
       const sp=3*d,fx_=-Math.sin(yaw),fz=-Math.cos(yaw),rx=Math.cos(yaw),rz=-Math.sin(yaw);
-      const nx=px+(fx_*-mz+rx*mx)*sp,nz=pz+(fz*-mz+rz*mx)*sp;
-      if(!blocked(nx,pz))px=nx;if(!blocked(px,nz))pz=nz}
-    s3(vc,S.cust,mkCust,upCust);s3(vt,S.th,mkTh,upTh);
-    beg.visible=S.ph==='open'&&!!S.bsh&&S.bs==='wait';
-    sc.background.lerp(S.ph==='open'?DAY:NIGHT,.05);
-    hud();fx();
-    const u=S.run?pick(0,0):null,p=$('#prompt'),t=u?lab(u):'';
-    p.style.display=t?'block':'none';p.textContent=t}
-  kb=Math.max(0,kb-d);
-  cam.position.set(px,1.6-kb*.3,pz);cam.rotation.set(pitch,yaw,0);
-  ren.render(sc,cam)}
-requestAnimationFrame(loop);
+ 
