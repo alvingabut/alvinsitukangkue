@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Toko Kue Manis (First Person)</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<canvas id="c"></canvas>
+<div class="hud"><span id="hDay"></span><span id="hMoney"></span><span id="hRep"></span><div class="timer"><i id="tBar"></i></div><span id="hPh"></span><button class="pbtn" data-a="pause" aria-label="Jeda">⏸</button></div>
+<div class="cross"></div><div id="prompt"></div>
+<div class="side"><div id="stockT"></div><div id="ovenT"></div><div id="ordT"></div></div>
+<div class="help">WASD jalan · Mouse lihat · Klik / E interaksi · P/Esc jeda<br>HP: geser kiri jalan, kanan lihat, ketuk interaksi</div>
+<div id="toast"></div>
+<div class="ov on" id="ov"><div class="box"><h2>🧁 Toko Kue Manis</h2>
+<p>Kamu pemilik toko, lihat semuanya dari sudut pandang sendiri!</p>
+<p><b>Dapur:</b> ruang dapur ada di kanan belakang, lengkap dengan kompor, oven, kulkas, dan rak bahan. Klik baki kue di meja dapur, koki akan mengaduk, memanggang, lalu menghias. <b>Kasir:</b> klik pelanggan untuk melayani. <b>Pengemis:</b> beri dia kue tiap hari.</p>
+<p><b>Pre-order:</b> terima pesanan 4 hari sebelum kue jadi, lewat 📱 telepon (online) atau pelanggan 📋 (langsung). Antar tepat waktu atau reputasi turun!</p>
+<p><b>Malam:</b> pencuri masuk. Klik 3x untuk menangkap. Klik koki untuk upgrade kecepatan.</p>
+<button class="b" data-a="start">Mulai Berjualan</button></div></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
