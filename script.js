@@ -257,6 +257,8 @@ function s3(m,list,mk,up){
 function mkCust(o){const g=person(CL[o.id%CL.length]),k=C.find(x=>x.k===o.k);
   const b=spr(o.o?(o.o.ch==='on'?'🛵':'📦'):o.ord?'📋':k.e,.6);b.position.y=2.05;g.add(b);
   const bar=new THREE.Sprite(new THREE.SpriteMaterial({color:0x35b97a}));bar.scale.set(.8,.08,1);bar.position.y=1.78;g.add(bar);
+  g.userData={a:'cust',bar:bar};return g}
+function upCust(g,o){
   g.position.set(-4.4+o.s*1.2,0,2.5);g.rotation.y=Math.PI;
   const bar=g.userData.bar;bar.scale.x=.8*Math.max(.02,o.pat);
   bar.material.color.set(o.pat>.5?0x35b97a:o.pat>.25?0xf4b400:0xe53935)}
